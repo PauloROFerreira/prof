@@ -1,0 +1,72 @@
+#include <WiFi.h>
+#include <ESP_Mail_Client.h>
+
+// Configurações da rede Wi-Fi
+const char* ssid = "Fique Fora 2"; // Substitua pelo nome da sua rede Wi-Fi
+const char* password = "Paulo@61"; // Substitua pela senha da sua rede Wi-Fi
+
+// Configurações do servidor SMTP (Gmail)
+#define SMTP_HOST "smtp.gmail.com"
+#define SMTP_PORT 465
+#define AUTHOR_EMAIL "audiomelhor@gmail.com" // Substitua pelo seu e-mail
+#define AUTHOR_PASSWORD "bnsa oxhp nftm jiep" // Substitua pela Senha de App gerada
+#define RECIPIENT_EMAIL "audiomelhor@gmail.com" // Substitua pelo e-mail do destinatário
+
+// Objeto para a sessão SMTP
+SMTPSession smtp;
+
+void setup() {
+  // Inicializa a comunicação serial
+  Serial.begin(1000000);
+  Serial.println("Hello World!");
+
+  // Conecta à rede Wi-Fi
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando ao Wi-Fi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nConectado ao Wi-Fi!");
+  Serial.println(WiFi.localIP());
+
+  // Configurações da sessão SMTP
+  MailClient.networkReconnect(true);
+  smtp.debug(1); // Ativa mensagens de depuração (0 para desativar)
+  
+  // Configurações do servidor SMTP
+  Session_Config config;
+  config.server.host_name = SMTP_HOST;
+  config.server.port = SMTP_PORT;
+  config.login.email = AUTHOR_EMAIL;
+  config.login.password = AUTHOR_PASSWORD;
+  config.time.ntp_server = "pool.ntp.org"; // Servidor NTP para sincronização de tempo
+  config.time.gmt_offset = -3; // Fuso horário (ex.: -3 para Brasília)
+  config.time.day_light_offset = 0; // Ajuste para horário de verão (0 se não aplicável)
+
+  // Configuração da mensagem
+  SMTP_Message message;
+  message.sender.name = "ESP32";
+  message.sender.email = AUTHOR_EMAIL;
+  message.subject = "Hello World do ESP32";
+  message.addRecipient("Destinatário", RECIPIENT_EMAIL);
+  message.text.content = "Hello World! Este é um teste do ESP32.";
+
+  // Conecta ao servidor SMTP e envia o e-mail
+  if (!smtp.connect(&config)) {
+    Serial.println("Erro ao conectar ao servidor SMTP: " + smtp.errorReason());
+    return;
+  }
+
+  if (!MailClient.sendMail(&smtp, &message)) {
+    Serial.println("Erro ao enviar e-mail: " + smtp.errorReason());
+  } else {
+    Serial.println("E-mail enviado com sucesso!");
+  }
+
+  smtp.closeSession();
+}
+
+void loop() {
+  // Nada no loop, pois o e-mail é enviado apenas uma vez
+}
